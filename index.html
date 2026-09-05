@@ -1,0 +1,928 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Casino Routine Grid</title>
+<style>
+body{font-family:Arial;margin:0;background:#f4f5f7;padding:18px;color:#222}
+.wrap{max-width:1100px;margin:auto}
+h1{font-size:24px;margin:0 0 5px}
+.legend{font-size:13px;color:#666;margin-bottom:14px}
+.bar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+button{border:1px solid #ccc;background:white;padding:8px 12px;border-radius:7px;cursor:pointer}
+.tablewrap{background:white;border-radius:10px;overflow:auto;box-shadow:0 2px 8px #0001;max-height:calc(100vh - 110px)}
+table{width:100%;border-collapse:separate;border-spacing:0;min-width:760px}
+th,td{border-bottom:1px solid #ddd;border-right:1px solid #eee}
+th{position:sticky;top:0;background:#dbeaf6;z-index:3;padding:10px;text-align:center}
+th:first-child{left:0;z-index:5;text-align:left;min-width:420px}
+td{height:43px;text-align:center}
+.offer{position:sticky;left:0;z-index:2;background:white;text-align:left;padding:8px 12px;min-width:420px}
+.offer a{color:#174f91;text-decoration:none;font-size:14px}
+tbody tr:nth-child(even) td{background:#f3f3f3}
+tbody tr:nth-child(even) .offer{background:#f3f3f3}
+.cell{display:flex;width:100%;height:100%;align-items:center;justify-content:center;cursor:pointer}
+.cell input{position:absolute;opacity:0;pointer-events:none}
+.cell span{
+  width:30px;height:25px;border:2px solid #8c96a3;border-radius:6px;background:white;
+  position:relative;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;box-sizing:border-box;transition:.12s ease;
+}
+.cell.state-done span{background:#18a84b;border-color:#18a84b;color:white}
+.cell.state-done span::after{content:"✓";font-size:21px;line-height:1}
+.cell.state-na span{width:38px;background:#b9c0c9;border-color:#b9c0c9;color:white}
+.cell.state-na span::after{content:"N/A";font-size:11px;letter-spacing:.2px}
+.na{color:#aaa;background:#fafafa!important}
+tfoot td{position:sticky;bottom:0;background:#dbeaf6!important;font-weight:bold;padding:8px;z-index:3}
+tfoot td:first-child{position:sticky;left:0;z-index:5;text-align:left;padding-left:12px}
+@media(max-width:700px){body{padding:8px}th:first-child,.offer{min-width:280px}}
+
+.editing .offer a { pointer-events:none; color:#444; text-decoration:none; }
+.edit-actions { display:none; margin-left:8px; gap:5px; }
+.editing .edit-actions { display:inline-flex; }
+.edit-actions button { padding:3px 7px; font-size:12px; }
+.editing .na { background:#fff8e8 !important; }
+.editing .na::after { content:" (click to enable)"; font-size:11px; color:#a47b00; }
+.editing td:not(.offer):not(.na) { background:#eef8ee; }
+
+
+.complete-row td{background:#eaf4ff!important;padding:9px 6px}
+.complete-row td:first-child{font-weight:bold}
+.complete-wrap{display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px}
+.complete-wrap input{width:18px;height:18px;cursor:pointer}
+
+
+/* Subtle colour by account */
+thead th:nth-child(2){background:#dcecff}
+thead th:nth-child(3){background:#ffe1ee}
+thead th:nth-child(4){background:#def7e5}
+thead th:nth-child(5){background:#eee3ff}
+thead th:nth-child(6){background:#fff0c8}
+
+tbody td:nth-child(2){background:#f4f9ff}
+tbody td:nth-child(3){background:#fff7fb}
+tbody td:nth-child(4){background:#f4fcf6}
+tbody td:nth-child(5){background:#faf7ff}
+tbody td:nth-child(6){background:#fffbef}
+
+tbody tr:nth-child(even) td:nth-child(2){background:#edf6ff}
+tbody tr:nth-child(even) td:nth-child(3){background:#fff0f7}
+tbody tr:nth-child(even) td:nth-child(4){background:#edf9f0}
+tbody tr:nth-child(even) td:nth-child(5){background:#f5efff}
+tbody tr:nth-child(even) td:nth-child(6){background:#fff7df}
+
+.complete-row td:nth-child(2){background:#dcecff!important}
+.complete-row td:nth-child(3){background:#ffe1ee!important}
+.complete-row td:nth-child(4){background:#def7e5!important}
+.complete-row td:nth-child(5){background:#eee3ff!important}
+.complete-row td:nth-child(6){background:#fff0c8!important}
+
+.editing tbody td:not(.offer){cursor:pointer;outline:1px dashed #aeb6c2;outline-offset:-5px}
+.editing tbody td.na{background:#fff4d6!important}
+.editing tbody td.na::after{content:" click to add";font-size:10px;color:#9a7200}
+.editing tbody td:not(.offer):not(.na)::after{content:" click to remove";display:block;font-size:9px;color:#718096;margin-top:1px}
+
+
+.daybar{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 12px}
+.daychip{padding:5px 9px;border-radius:8px;background:#fff;border:1px solid #d7dce3;font-size:12px;color:#596273}
+.daychip.today{background:#246fe5;color:#fff;border-color:#246fe5;font-weight:bold}
+
+.offer-main{display:flex;align-items:center;gap:10px;min-width:0}
+.offer-logo{width:92px;height:38px;border-radius:6px;object-fit:contain;background:#fff;border:1px solid #dfe3e8;padding:1px 2px;box-sizing:border-box;flex:0 0 auto}
+.offer-logo-fallback{width:92px;height:38px;border-radius:6px;background:#e7ebf1;border:1px solid #d4d9e0;
+display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;color:#596273;flex:0 0 auto}
+.offer-text{min-width:0}
+.offer-text a{display:inline-block;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+.days-mini{display:none;margin-top:3px;font-size:10px;color:#6b7280}
+.editing .days-mini{display:block}
+
+.modal-backdrop{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;padding:18px;z-index:50}
+.modal-backdrop.open{display:flex}
+.modal{width:min(720px,96vw);max-height:90vh;overflow:auto;background:#fff;border-radius:14px;box-shadow:0 20px 60px #0005;padding:18px}
+.modal h2{margin:0 0 14px}
+.formrow{margin-bottom:14px}
+.formrow label{display:block;font-size:12px;font-weight:bold;margin-bottom:5px;color:#424b57}
+.formrow input[type=text],.formrow input[type=url]{width:100%;box-sizing:border-box;border:1px solid #cfd5dc;border-radius:8px;padding:9px 10px;font-size:14px}
+.daypick{display:flex;gap:7px;flex-wrap:wrap}
+.daypick label{display:flex;align-items:center;gap:5px;border:1px solid #d7dce3;border-radius:8px;padding:7px 9px;background:#fafbfc;cursor:pointer;font-size:12px}
+.logo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:8px;max-height:290px;overflow:auto;padding:2px}
+.logo-option{border:1px solid #d8dde4;border-radius:9px;background:#fff;padding:8px 6px;min-height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;font-size:11px;text-align:center}
+.logo-option.selected{outline:3px solid #246fe5;border-color:#246fe5}
+.logo-option img,.picker-logo{width:94px;height:40px;object-fit:contain}.logo-option .offer-logo-fallback{width:94px;height:40px;font-size:10px;padding:2px;box-sizing:border-box;text-align:center}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.primary{background:#246fe5;color:#fff;border-color:#246fe5}
+.danger{color:#b42318;border-color:#f0b4ae}
+@media(max-width:700px){
+  .offer-text a{max-width:190px}
+  .modal{padding:14px}
+}
+
+
+/* Larger local logos — original checklist layout retained */
+.offer-main{gap:12px !important}
+.offer-main > .offer-logo{
+  width:132px !important;
+  height:50px !important;
+  max-width:132px !important;
+  object-fit:contain !important;
+  padding:2px 5px !important;
+  border-radius:7px !important;
+  box-sizing:border-box !important;
+  background:#fff !important;
+}
+.offer-main > .offer-logo-fallback{
+  width:132px !important;
+  height:50px !important;
+  min-width:132px !important;
+  border-radius:7px !important;
+}
+tbody td.offer{padding:6px 12px !important}
+
+
+/* Tighter, larger logo display */
+.offer-main > .offer-logo{
+  width:150px !important;
+  height:54px !important;
+  max-width:150px !important;
+  padding:1px 3px !important;
+  object-fit:contain !important;
+}
+.offer-main > .offer-logo-fallback{
+  width:150px !important;
+  min-width:150px !important;
+  height:54px !important;
+}
+
+
+/* Clean larger logos — preserve natural proportions */
+.offer-main{
+  display:flex !important;
+  align-items:center !important;
+  gap:12px !important;
+}
+.offer-main > .offer-logo{
+  width:145px !important;
+  height:56px !important;
+  min-width:145px !important;
+  max-width:145px !important;
+  padding:1px 2px !important;
+  margin:0 !important;
+  object-fit:contain !important;
+  object-position:center !important;
+  border-radius:7px !important;
+  box-sizing:border-box !important;
+  background:#fff !important;
+}
+.offer-main > .offer-logo-fallback{
+  width:145px !important;
+  min-width:145px !important;
+  max-width:145px !important;
+  height:56px !important;
+  box-sizing:border-box !important;
+}
+tbody td.offer{
+  padding:5px 12px !important;
+}
+
+/* Awkward-shaped logos: use a little more visual space without distortion */
+.offer-main > img[alt="Betfred"],
+.offer-main > img[alt="SlotsKing"],
+.offer-main > img[alt="partypoker"],
+.offer-main > img[alt="Tombola"]{
+  padding:0 !important;
+}
+
+
+/* Unboxed logo display — keep existing checklist layout and logic */
+.offer-main{
+  display:flex !important;
+  align-items:center !important;
+  gap:14px !important;
+}
+.offer-main > .offer-logo{
+  width:155px !important;
+  height:54px !important;
+  min-width:155px !important;
+  max-width:155px !important;
+  padding:0 !important;
+  margin:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  object-fit:contain !important;
+  object-position:left center !important;
+}
+.offer-main > .offer-logo-fallback{
+  width:155px !important;
+  min-width:155px !important;
+  max-width:155px !important;
+  height:54px !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  padding:0 !important;
+  justify-content:flex-start !important;
+}
+tbody td.offer{
+  padding:5px 12px !important;
+}
+
+</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body><div class="wrap">
+<div class="bar"><div><h1>Daily Casino Routine</h1><div class="legend">Click a box: blank → ✓ done → N/A → blank. Edit mode lets you choose days, logos and which accounts have each offer.</div></div>
+<div><button id="editMode">Edit mode</button> <button id="addOffer" style="display:none">Add offer</button> <button id="reset">Reset today</button></div></div>
+<div class="daybar" id="daybar"></div>
+<div class="tablewrap"><table>
+<thead><tr><th>Offer</th><th>Andy</th><th>Charlotte</th><th>Michael</th><th>Mel</th><th>Jenni</th></tr></thead>
+<tbody><tr><td class='offer'><a href='https://www.betfred.com/' target='_blank'>Betfred Mystery Spins</a><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></td><td><label class='cell'><input type='checkbox' data-p='Andy' data-i='0'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Charlotte' data-i='0'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Michael' data-i='0'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Mel' data-i='0'><span></span></label></td><td class='na'>—</td></tr><tr><td class='offer'><a href='https://www.casumo.com/en-gb/sports#home' target='_blank'>Casumo- Deposit for FS</a><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></td><td><label class='cell'><input type='checkbox' data-p='Andy' data-i='1'><span></span></label></td><td class='na'>—</td><td><label class='cell'><input type='checkbox' data-p='Michael' data-i='1'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Mel' data-i='1'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Jenni' data-i='1'><span></span></label></td></tr><tr><td class='offer'><a href='https://casino.kwiff.com/promotions/' target='_blank'>Kwiff Daily Wheel</a><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></td><td><label class='cell'><input type='checkbox' data-p='Andy' data-i='2'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Charlotte' data-i='2'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Michael' data-i='2'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Mel' data-i='2'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Jenni' data-i='2'><span></span></label></td></tr><tr><td class='offer'><a href='https://slotsking.com/casino/featured/lobby/' target='_blank'>SlotsKing Daily Wheel</a><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></td><td><label class='cell'><input type='checkbox' data-p='Andy' data-i='3'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Charlotte' data-i='3'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Michael' data-i='3'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Mel' data-i='3'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Jenni' data-i='3'><span></span></label></td></tr><tr><td class='offer'><a href='https://www.grpcasino.com/casino/featured/' target='_blank'>GRP Casino Free Wheel</a><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></td><td><label class='cell'><input type='checkbox' data-p='Andy' data-i='4'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Charlotte' data-i='4'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Michael' data-i='4'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Mel' data-i='4'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Jenni' data-i='4'><span></span></label></td></tr><tr><td class='offer'><a href='https://www.partypoker.com/' target='_blank'>partypoker - W25 1 Free spin on wheel</a><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></td><td><label class='cell'><input type='checkbox' data-p='Andy' data-i='5'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Charlotte' data-i='5'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Michael' data-i='5'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Mel' data-i='5'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Jenni' data-i='5'><span></span></label></td></tr><tr><td class='offer'><a href='https://casino.partycasino.com/' target='_blank'>PartyCasino - W25 1 Free spin on wheel</a><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></td><td><label class='cell'><input type='checkbox' data-p='Andy' data-i='6'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Charlotte' data-i='6'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Michael' data-i='6'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Mel' data-i='6'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Jenni' data-i='6'><span></span></label></td></tr><tr><td class='offer'><a href='https://games.boylesports.com/promotions-and-offers/originals-all-stars' target='_blank'>Boylesports Games Free Reel Spin</a><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></td><td><label class='cell'><input type='checkbox' data-p='Andy' data-i='7'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Charlotte' data-i='7'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Michael' data-i='7'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Mel' data-i='7'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Jenni' data-i='7'><span></span></label></td></tr><tr><td class='offer'><a href='https://www.tombolaarcade.co.uk/arcade-home' target='_blank'>Tombola Arcade- WxGx when available</a><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></td><td><label class='cell'><input type='checkbox' data-p='Andy' data-i='8'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Charlotte' data-i='8'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Michael' data-i='8'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Mel' data-i='8'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Jenni' data-i='8'><span></span></label></td></tr><tr><td class='offer'><a href='https://playbetty.co.uk/' target='_blank'>Betty Casino Wheels</a><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></td><td><label class='cell'><input type='checkbox' data-p='Andy' data-i='9'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Charlotte' data-i='9'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Michael' data-i='9'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Mel' data-i='9'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Jenni' data-i='9'><span></span></label></td></tr><tr><td class='offer'><a href='https://www.slotstemple.com/' target='_blank'>Slots Temple (Thursday W50G30FS) FS Friday</a><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></td><td><label class='cell'><input type='checkbox' data-p='Andy' data-i='10'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Charlotte' data-i='10'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Michael' data-i='10'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Mel' data-i='10'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Jenni' data-i='10'><span></span></label></td></tr><tr><td class='offer'><a href='https://www.fabulousvegas.co.uk/promotions/slot-light#' target='_blank'>Fabulous Vegas- W10G10FS Valid till 6th Sept</a><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></td><td><label class='cell'><input type='checkbox' data-p='Andy' data-i='11'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Charlotte' data-i='11'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Michael' data-i='11'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Mel' data-i='11'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Jenni' data-i='11'><span></span></label></td></tr><tr><td class='offer'><a href='https://playbingoplus.com/home' target='_blank'>BingoPlus Free Wheel + £5 Bingo offer when available</a><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></td><td><label class='cell'><input type='checkbox' data-p='Andy' data-i='12'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Charlotte' data-i='12'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Michael' data-i='12'><span></span></label></td><td class='na'>—</td><td><label class='cell'><input type='checkbox' data-p='Jenni' data-i='12'><span></span></label></td></tr><tr><td class='offer'><a href='https://promos.paddypower.com/promotion?promoCode=GAMOBXGY010926' target='_blank'>Paddy Power™ Games Promos (TUESDAY)</a><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></td><td><label class='cell'><input type='checkbox' data-p='Andy' data-i='13'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Charlotte' data-i='13'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Michael' data-i='13'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Mel' data-i='13'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Jenni' data-i='13'><span></span></label></td></tr><tr><td class='offer'><a href='https://www.virgingames.com/' target='_blank'>Virgin Games - Wednesday 9th</a><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></td><td><label class='cell'><input type='checkbox' data-p='Andy' data-i='14'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Charlotte' data-i='14'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Michael' data-i='14'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Mel' data-i='14'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Jenni' data-i='14'><span></span></label></td></tr><tr><td class='offer'><a href='https://www.galabingo.com/' target='_blank'>Gala Bingo - Free Spin Reel</a><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></td><td><label class='cell'><input type='checkbox' data-p='Andy' data-i='15'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Charlotte' data-i='15'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Michael' data-i='15'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Mel' data-i='15'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Jenni' data-i='15'><span></span></label></td></tr><tr><td class='offer'><a href='https://www.galacasino.com/en/games' target='_blank'>Gala Casino (Monday Live Casino + Daily W20/Weekend £5</a><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></td><td><label class='cell'><input type='checkbox' data-p='Andy' data-i='16'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Charlotte' data-i='16'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Michael' data-i='16'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Mel' data-i='16'><span></span></label></td><td><label class='cell'><input type='checkbox' data-p='Jenni' data-i='16'><span></span></label></td></tr></tbody>
+<tfoot>
+<tr><td>Completed</td><td id='count-Andy'>0</td><td id='count-Charlotte'>0</td><td id='count-Michael'>0</td><td id='count-Mel'>0</td><td id='count-Jenni'>0</td></tr>
+<tr class="complete-row"><td>Account complete today</td>
+<td><label class="complete-wrap"><input type="checkbox" class="account-complete" data-p="Andy"> Complete</label></td>
+<td><label class="complete-wrap"><input type="checkbox" class="account-complete" data-p="Charlotte"> Complete</label></td>
+<td><label class="complete-wrap"><input type="checkbox" class="account-complete" data-p="Michael"> Complete</label></td>
+<td><label class="complete-wrap"><input type="checkbox" class="account-complete" data-p="Mel"> Complete</label></td>
+<td><label class="complete-wrap"><input type="checkbox" class="account-complete" data-p="Jenni"> Complete</label></td>
+</tr>
+</tfoot>
+</table></div></div>
+<div class="modal-backdrop" id="offerModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h2 id="modalTitle">Edit offer</h2>
+    <div class="formrow"><label for="modalName">Offer name</label><input id="modalName" type="text"></div>
+    <div class="formrow"><label for="modalUrl">Offer URL</label><input id="modalUrl" type="url" placeholder="https://"></div>
+    <div class="formrow"><label>Active days</label><div class="daypick" id="modalDays"></div></div>
+    <div class="formrow"><label>Choose logo</label><input id="logoSearch" type="text" placeholder="Search logos..." style="width:100%;box-sizing:border-box;border:1px solid #cfd5dc;border-radius:8px;padding:9px 10px;font-size:14px;margin-bottom:8px"><div class="logo-grid" id="logoGrid"></div></div>
+    <div class="modal-actions">
+      <button type="button" id="modalCancel">Cancel</button>
+      <button type="button" id="modalSave" class="primary">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY="daily-casino-routine-grid-v3", TODAY=new Date().toISOString().slice(0,10);
+function getBoxes(){return [...document.querySelectorAll('tbody input[type="checkbox"]')]}
+function getCompleteBoxes(){return [...document.querySelectorAll('.account-complete')]}
+let localChangePending = false;
+let localRevision = 0;
+let lastCloudJSON = "";
+
+function markLocalChange(){
+  localRevision += 1;
+  localChangePending = true;
+  return localRevision;
+}
+
+const SUPABASE_URL = "https://qhvphabpufgoazoyxama.supabase.co";
+const SUPABASE_KEY = "sb_publishable_2A9LXderCvqe_c9rt18o5Q_4TnLMxKJ";
+const cloud = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let cloudBusy = false;
+let cloudSaveTimer = null;
+
+async function readCloud() {
+  const { data, error } = await cloud.from("routine_state").select("data").eq("id", 1).single();
+  if (error) { console.error("Cloud read failed:", error); return null; }
+  return data?.data || {};
+}
+
+async function writeCloud(payload, revisionAtSave) {
+  cloudBusy = true;
+  const { error } = await cloud.from("routine_state")
+    .update({data: payload, updated_at: new Date().toISOString()})
+    .eq("id", 1);
+  cloudBusy = false;
+
+  if (error) {
+    console.error("Cloud save failed:", error);
+    return false;
+  }
+
+  lastCloudJSON = JSON.stringify(payload);
+
+  // Only clear the pending flag if no newer click happened while saving.
+  if (revisionAtSave === localRevision) {
+    localChangePending = false;
+  }
+  return true;
+}
+
+function cloudPayload() {
+  let layout = null;
+  try { layout = JSON.parse(localStorage.getItem("daily-casino-layout-v1") || "null"); } catch(e) {}
+  return { state: state(), layout };
+}
+
+function queueCloudSave() {
+  clearTimeout(cloudSaveTimer);
+  const revisionAtSave = localRevision;
+  cloudSaveTimer = setTimeout(() => writeCloud(cloudPayload(), revisionAtSave), 150);
+}
+
+async function syncFromCloud() {
+  // Capture the local version before starting the cloud read.
+  if (localChangePending || cloudBusy) return;
+  const revisionBeforeRead = localRevision;
+
+  const payload = await readCloud();
+  if (!payload) return;
+
+  // If the user clicked anything while the cloud request was in flight,
+  // ignore this older response instead of letting it undo local changes.
+  if (localChangePending || cloudBusy || localRevision !== revisionBeforeRead) return;
+
+  const incomingJSON = JSON.stringify(payload);
+  if (incomingJSON === lastCloudJSON) return;
+  lastCloudJSON = incomingJSON;
+
+  if (payload.layout) localStorage.setItem("daily-casino-layout-v1", JSON.stringify(payload.layout));
+  if (payload.state) localStorage.setItem(KEY, JSON.stringify(payload.state));
+
+  loadLayout();
+  bindCheckboxes();
+  renderState();
+  bindEditButtons();
+  applyScheduleVisibility();
+}
+
+const people=["Andy","Charlotte","Michael","Mel","Jenni"];
+const DAYS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const ALL_DAYS=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const TODAY_DAY=DAYS[new Date().getDay()];
+
+const LOGOS=[
+  {id:"none",name:"No logo",domain:""},
+  {id:"betfred",name:"Betfred",domain:"betfred.com",local:"logos/betfred.png"},
+  {id:"casumo",name:"Casumo",domain:"casumo.com",local:"logos/casumo.png"},
+  {id:"kwiff",name:"Kwiff",domain:"kwiff.com",local:"logos/kwiff.png"},
+  {id:"slotsking",name:"SlotsKing",domain:"slotsking.com",local:"logos/slotsking.png"},
+  {id:"grpcasino",name:"GRP Casino",domain:"grpcasino.com",local:"logos/grpcasino.png"},
+  {id:"partypoker",name:"partypoker",domain:"partypoker.com",local:"logos/partypoker.png"},
+  {id:"partycasino",name:"PartyCasino",domain:"partycasino.com",local:"logos/partycasino.png"},
+  {id:"boylesports",name:"BoyleSports",domain:"boylesports.com",local:"logos/boylesports.png"},
+  {id:"tombola",name:"Tombola",domain:"tombola.co.uk",local:"logos/tombola.png"},
+  {id:"betty",name:"Betty",domain:"betty.ca",local:"logos/betty.png"},
+  {id:"slotstemple",name:"Slots Temple",domain:"slotstemple.com",local:"logos/slotstemple.png"},
+  {id:"fabulousvegas",name:"Fabulous Vegas",domain:"fabulousvegas.com",local:"logos/fabulousvegas.png"},
+  {id:"bingoplus",name:"BingoPlus",domain:"playbingoplus.com",local:"logos/bingoplus.png"},
+  {id:"paddypower",name:"Paddy Power",domain:"paddypower.com",local:"logos/paddypower.png"},
+  {id:"virgingames",name:"Virgin Games",domain:"virgingames.com",local:"logos/virgingames.png"},
+  {id:"galabingo",name:"Gala Bingo",domain:"galabingo.com",local:"logos/galabingo.png"},
+  {id:"galacasino",name:"Gala Casino",domain:"galacasino.com",local:"logos/galacasino.png"},
+  {id:"skybet",name:"Sky Bet",domain:"skybet.com"},
+  {id:"skyvegas",name:"Sky Vegas",domain:"skyvegas.com"},
+  {id:"ladbrokes",name:"Ladbrokes",domain:"ladbrokes.com"},
+  {id:"coral",name:"Coral",domain:"coral.co.uk"},
+  {id:"williamhill",name:"William Hill",domain:"williamhill.com"},
+  {id:"bet365",name:"bet365",domain:"bet365.com"},
+  {id:"betfair",name:"Betfair",domain:"betfair.com"},
+  {id:"betfaircasino",name:"Betfair Casino",domain:"betfair.com"},
+  {id:"smarkets",name:"Smarkets",domain:"smarkets.com"},
+  {id:"matchbook",name:"Matchbook",domain:"matchbook.com"},
+  {id:"betdaq",name:"BETDAQ",domain:"betdaq.com"},
+  {id:"betvictor",name:"BetVictor",domain:"betvictor.com"},
+  {id:"betmgm",name:"BetMGM",domain:"betmgm.co.uk"},
+  {id:"betway",name:"Betway",domain:"betway.com"},
+  {id:"betgoodwin",name:"BetGoodwin",domain:"betgoodwin.co.uk"},
+  {id:"virginbet",name:"Virgin Bet",domain:"virginbet.com"},
+  {id:"talksportbet",name:"talkSPORT BET",domain:"talksportbet.com"},
+  {id:"spreadex",name:"Spreadex",domain:"spreadex.com"},
+  {id:"star-sports",name:"Star Sports",domain:"starsports.bet"},
+  {id:"quinnbet",name:"QuinnBet",domain:"quinnbet.com"},
+  {id:"betuk",name:"BetUK",domain:"betuk.com"},
+  {id:"livescorebet",name:"LiveScore Bet",domain:"livescorebet.com"},
+  {id:"unibet",name:"Unibet",domain:"unibet.co.uk"},
+  {id:"888sport",name:"888sport",domain:"888sport.com"},
+  {id:"888casino",name:"888casino",domain:"888casino.com"},
+  {id:"leovegas",name:"LeoVegas",domain:"leovegas.com"},
+  {id:"mrq",name:"MrQ",domain:"mrq.com"},
+  {id:"grosvenor",name:"Grosvenor Casinos",domain:"grosvenorcasinos.com"},
+  {id:"buzzbingo",name:"Buzz Bingo",domain:"buzzbingo.com"},
+  {id:"meccabingo",name:"Mecca Bingo",domain:"meccabingo.com"},
+  {id:"heartbingo",name:"Heart Bingo",domain:"heartbingo.co.uk"},
+  {id:"jackpotjoy",name:"Jackpotjoy",domain:"jackpotjoy.com"},
+  {id:"monopolycasino",name:"MONOPOLY Casino",domain:"monopolycasino.com"},
+  {id:"rainbowriches",name:"Rainbow Riches Casino",domain:"rainbowrichescasino.com"},
+  {id:"foxybingo",name:"Foxy Bingo",domain:"foxybingo.com"},
+  {id:"foxygames",name:"Foxy Games",domain:"foxygames.com"},
+  {id:"bwin",name:"bwin",domain:"bwin.com"},
+  {id:"sportingbet",name:"Sportingbet",domain:"sportingbet.com"},
+  {id:"dafabet",name:"Dafabet",domain:"dafabet.com"},
+  {id:"betano",name:"Betano",domain:"betano.com"},
+  {id:"betsson",name:"Betsson",domain:"betsson.com"},
+  {id:"betsafe",name:"Betsafe",domain:"betsafe.com"},
+  {id:"comeon",name:"ComeOn!",domain:"comeon.com"},
+  {id:"videoslots",name:"Videoslots",domain:"videoslots.com"},
+  {id:"mrvegas",name:"Mr Vegas",domain:"mrvegas.com"},
+  {id:"luckydays",name:"LuckyDays",domain:"luckydays.com"},
+  {id:"playojo",name:"PlayOJO",domain:"playojo.com"},
+  {id:"luckster",name:"Luckster",domain:"luckster.com"},
+  {id:"rizk",name:"Rizk",domain:"rizk.com"},
+  {id:"genesis",name:"Genesis Casino",domain:"genesiscasino.com"},
+  {id:"slotboss",name:"SlotBoss",domain:"slotboss.co.uk"},
+  {id:"ballycasino",name:"Bally Casino",domain:"ballycasino.co.uk"},
+  {id:"ballybet",name:"Bally Bet",domain:"ballybet.com"},
+  {id:"lottoland",name:"Lottoland",domain:"lottoland.co.uk"},
+  {id:"national-lottery",name:"The National Lottery",domain:"national-lottery.co.uk"},
+  {id:"betiton",name:"Betiton",domain:"betiton.com"},
+  {id:"novibet",name:"Novibet",domain:"novibet.co.uk"},
+  {id:"midnite",name:"Midnite",domain:"midnite.com"},
+  {id:"copybet",name:"CopyBet",domain:"copybet.com"},
+  {id:"parimatch",name:"Parimatch",domain:"parimatch.co.uk"},
+  {id:"netbet",name:"NetBet",domain:"netbet.co.uk"},
+  {id:"casino777",name:"Casino777",domain:"casino777.co.uk"},
+  {id:"luckydreams",name:"Lucky Dreams",domain:"luckydreams.com"},
+  {id:"slotplanet",name:"Slot Planet",domain:"slotplanet.com"},
+  {id:"spinit",name:"SpinIt",domain:"spinit.com"},
+  {id:"casino2020",name:"Casino 2020",domain:"casino2020.co.uk"},
+  {id:"betfred-bingo",name:"Betfred Bingo",domain:"betfred.com"},
+  {id:"betfred-games",name:"Betfred Games",domain:"betfred.com"},
+  {id:"paddy-games",name:"Paddy Power Games",domain:"paddypower.com"},
+  {id:"paddy-bingo",name:"Paddy Power Bingo",domain:"paddypower.com"},
+  {id:"ladbrokes-casino",name:"Ladbrokes Casino",domain:"ladbrokes.com"},
+  {id:"coral-casino",name:"Coral Casino",domain:"coral.co.uk"},
+  {id:"williamhill-vegas",name:"William Hill Vegas",domain:"williamhill.com"},
+  {id:"virgin-bingo",name:"Virgin Games Bingo",domain:"virgingames.com"},
+  {id:"gala-spins",name:"Gala Spins",domain:"galaspins.com"}
+];
+
+function faviconUrl(domain){
+  return domain ? `https://logos.hunter.io/${encodeURIComponent(domain)}` : "";
+}
+function fallbackLogoUrl(domain){
+  return domain ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128` : "";
+}
+function logoImgMarkup(l, extraClass="offer-logo"){
+  if(!l.domain && !l.local) return `<span class="offer-logo-fallback">${l.name==="No logo"?"No logo":l.name}</span>`;
+  const primary=l.local || faviconUrl(l.domain);
+  const fallback=l.local ? (l.domain ? faviconUrl(l.domain) : "") : fallbackLogoUrl(l.domain);
+  const fallback2=l.domain ? fallbackLogoUrl(l.domain) : "";
+  return `<img class="${extraClass}" src="${primary}" alt="${l.name}"
+    data-fallback="${fallback}" data-fallback2="${fallback2}" data-brand="${l.name}"
+    onerror="
+      if(!this.dataset.tried1 && this.dataset.fallback){this.dataset.tried1='1';this.src=this.dataset.fallback;}
+      else if(!this.dataset.tried2 && this.dataset.fallback2){this.dataset.tried2='1';this.src=this.dataset.fallback2;}
+      else{this.style.display='none';this.nextElementSibling.style.display='flex';}
+    ">
+    <span class="offer-logo-fallback" style="display:none">${l.name}</span>`;
+}
+function inferLogo(name="",url=""){
+  const hay=(name+" "+url).toLowerCase();
+  const direct=[
+    ["betfred","betfred"],["casumo","casumo"],["kwiff","kwiff"],["slotsking","slotsking"],
+    ["grp casino","grpcasino"],["partypoker","partypoker"],["partycasino","partycasino"],
+    ["boyle","boylesports"],["tombola","tombola"],["betty","betty"],["slots temple","slotstemple"],
+    ["fabulous vegas","fabulousvegas"],["bingoplus","bingoplus"],["paddy power","paddypower"],
+    ["virgin games","virgingames"],["gala bingo","galabingo"],["gala casino","galacasino"],
+    ["sky vegas","skyvegas"],["ladbrokes","ladbrokes"],["coral","coral"],["william hill","williamhill"],
+    ["888","888"],["unibet","unibet"],["bet365","bet365"],["grosvenor","grosvenor"],["betway","betway"],
+    ["leovegas","leovegas"],["mrq","mrq"],["betfair","betfair"],["betvictor","betvictor"],["betmgm","betmgm"]
+  ];
+  for(const [needle,id] of direct) if(hay.includes(needle)) return id;
+  return "none";
+}
+function logoObj(id){return LOGOS.find(x=>x.id===id)||LOGOS[0]}
+function logoMarkup(id,name){
+  const l=logoObj(id);
+  if(!l.domain) return `<span class="offer-logo-fallback">${(name||"?").slice(0,12)}</span>`;
+  return logoImgMarkup(l,"offer-logo");
+}
+
+
+function renderDaybar(){
+  const bar=document.getElementById("daybar");
+  bar.innerHTML=ALL_DAYS.map(d=>`<span class="daychip ${d===TODAY_DAY?"today":""}">${d}</span>`).join("");
+}
+
+function normalizeDays(days){
+  return Array.isArray(days)&&days.length ? days.filter(d=>ALL_DAYS.includes(d)) : [...ALL_DAYS];
+}
+
+function rowActiveToday(row){
+  const days=normalizeDays(JSON.parse(row.dataset.days||"null"));
+  return days.includes(TODAY_DAY);
+}
+
+function applyScheduleVisibility(){
+  currentRows().forEach(row=>{
+    const active=rowActiveToday(row);
+    row.style.display=(editing||active)?"":"none";
+  });
+  counts();
+}
+
+function state(){
+  let s={};
+  try{s=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
+  return s.date===TODAY ? {
+    date:TODAY,
+    done:s.done||{},
+    na:s.na||{},
+    complete:s.complete||{}
+  } : {date:TODAY,done:{},na:{},complete:{}};
+}
+
+function cellKey(p,i){return `${p}::${i}`}
+
+function prepareOfferCells(){
+  document.querySelectorAll("tbody tr").forEach((row, idx) => {
+    [...row.children].slice(1).forEach(td => {
+      if (td.classList.contains("na")) return; // permanently unavailable
+      const box = td.querySelector('input[type="checkbox"]');
+      const label = td.querySelector(".cell");
+      if (!box || !label) return;
+      box.dataset.i = idx;
+      label.dataset.p = box.dataset.p;
+      label.dataset.i = idx;
+    });
+  });
+}
+
+function renderState(){
+  prepareOfferCells();
+  const s=state();
+
+  getBoxes().forEach(b=>{
+    const p=b.dataset.p, i=b.dataset.i;
+    const isNa=!!s.na?.[p]?.[i];
+    const isDone=!isNa && !!s.done?.[p]?.[i];
+    const label=b.closest(".cell");
+    b.checked=isDone;
+    label?.classList.toggle("state-done",isDone);
+    label?.classList.toggle("state-na",isNa);
+    label?.setAttribute("title", isNa ? "N/A today" : isDone ? "Completed" : "Not done");
+  });
+
+  getCompleteBoxes().forEach(b=>{
+    b.checked=!!s.complete?.[b.dataset.p];
+  });
+
+  counts();
+}
+
+function counts(){
+  const s=state();
+  people.forEach(p=>{
+    const x=getBoxes().filter(b=>b.dataset.p===p && rowActiveToday(b.closest("tr")));
+    const active=x.filter(b=>!s.na?.[p]?.[b.dataset.i]);
+    const done=active.filter(b=>!!s.done?.[p]?.[b.dataset.i]).length;
+    const naCount=x.length-active.length;
+    document.getElementById("count-"+p).textContent =
+      naCount ? `${done}/${active.length} (+${naCount} N/A)` : `${done}/${active.length}`;
+  });
+}
+
+function load(){renderState()}
+
+function cycleOfferState(label){
+  if(editing) return;
+  markLocalChange();
+
+  const p=label.dataset.p, i=label.dataset.i;
+  const s=state();
+  s.done[p]??={};
+  s.na[p]??={};
+
+  const isNa=!!s.na[p][i];
+  const isDone=!isNa && !!s.done[p][i];
+
+  if(!isDone && !isNa){
+    // blank -> done
+    s.done[p][i]=true;
+    s.na[p][i]=false;
+  } else if(isDone){
+    // done -> N/A
+    s.done[p][i]=false;
+    s.na[p][i]=true;
+  } else {
+    // N/A -> blank
+    s.done[p][i]=false;
+    s.na[p][i]=false;
+  }
+
+  localStorage.setItem(KEY,JSON.stringify(s));
+  renderState();
+  queueCloudSave();
+}
+
+function saveComplete(){
+  markLocalChange();
+  const s=state();
+  const complete={};
+  getCompleteBoxes().forEach(b=>complete[b.dataset.p]=b.checked);
+  localStorage.setItem(KEY,JSON.stringify({
+    date:TODAY,done:s.done||{},na:s.na||{},complete
+  }));
+  queueCloudSave();
+}
+
+function bindCheckboxes(){
+  prepareOfferCells();
+
+  document.querySelectorAll("tbody .cell").forEach(label=>{
+    if(!label.dataset.syncBound){
+      label.addEventListener("click",(e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        cycleOfferState(label);
+      });
+      label.dataset.syncBound="1";
+    }
+  });
+
+  getCompleteBoxes().forEach(b=>{
+    if(!b.dataset.syncBound){
+      b.addEventListener("change",saveComplete);
+      b.dataset.syncBound="1";
+    }
+  });
+}
+
+bindCheckboxes();
+document.getElementById("reset").onclick=()=>{
+  markLocalChange();
+  localStorage.setItem(KEY,JSON.stringify({date:TODAY,done:{},na:{},complete:{}}));
+  renderState();
+  queueCloudSave();
+};
+
+let editing = false;
+
+function currentRows() {
+  return [...document.querySelectorAll("tbody tr")];
+}
+
+function refreshRowIndexes() {
+  currentRows().forEach((row, idx) => {
+    row.querySelectorAll("input[type=checkbox]").forEach(b => b.dataset.i = idx);
+  });
+}
+
+function bindEditButtons() {
+  document.querySelectorAll(".editOffer").forEach(btn => {
+    btn.onclick = (e) => {
+      e.preventDefault();
+      openOfferModal(btn.closest("tr"), false);
+    };
+  });
+
+  document.querySelectorAll(".deleteOffer").forEach(btn => {
+    btn.onclick = (e) => {
+      e.preventDefault();
+      const row = btn.closest("tr");
+      const name = row.querySelector(".offer a").textContent;
+      if (confirm(`Delete "${name}" from the routine?`)) {
+        row.remove();
+        refreshRowIndexes();
+        saveLayout();
+        renderState();
+        applyScheduleVisibility();
+      }
+    };
+  });
+
+  document.querySelectorAll("tbody td.na").forEach(td => {
+    td.onclick = (e) => {
+      if (!editing) return;
+      e.preventDefault();
+      const row = td.closest("tr");
+      const colIndex = [...row.children].indexOf(td);
+      const person = document.querySelectorAll("thead th")[colIndex].textContent.trim();
+      td.className = "";
+      td.innerHTML = `<label class="cell"><input type="checkbox" data-p="${person}" data-i="${[...row.parentNode.children].indexOf(row)}"><span></span></label>`;
+      bindCheckboxes();
+      bindEditButtons();
+      saveLayout();
+      renderState();
+    };
+  });
+
+  document.querySelectorAll("tbody td:not(.offer):not(.na)").forEach(td => {
+    td.onclick = (e) => {
+      if (!editing) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const row = td.closest("tr");
+      const box = td.querySelector('input[type="checkbox"]');
+      if (box) {
+        const s=state();
+        s.done[box.dataset.p]??={};
+        s.na[box.dataset.p]??={};
+        delete s.done[box.dataset.p][box.dataset.i];
+        delete s.na[box.dataset.p][box.dataset.i];
+        localStorage.setItem(KEY,JSON.stringify(s));
+      }
+      td.className = "na";
+      td.textContent = "—";
+      bindEditButtons();
+      saveLayout();
+      renderState();
+    };
+  });
+}
+function saveLayout() {
+  markLocalChange();
+  const layout = currentRows().map(row => {
+    const a = row.querySelector(".offer a");
+    const availability = {};
+    [...row.children].slice(1).forEach((td, idx) => {
+      const person = document.querySelectorAll("thead th")[idx+1].textContent.trim();
+      availability[person] = !td.classList.contains("na");
+    });
+    return {
+      name:a.textContent,
+      url:a.href,
+      availability,
+      days:normalizeDays(JSON.parse(row.dataset.days||"null")),
+      logo:row.dataset.logo||inferLogo(a.textContent,a.href)
+    };
+  });
+  localStorage.setItem("daily-casino-layout-v1", JSON.stringify(layout));
+  queueCloudSave();
+}
+
+function loadLayout() {
+  let layout = null;
+  try { layout = JSON.parse(localStorage.getItem("daily-casino-layout-v1") || "null"); } catch(e) {}
+
+  // First run/migration: build a layout from the original HTML.
+  if (!layout) {
+    layout = currentRows().map(row => {
+      const a=row.querySelector(".offer a");
+      const availability={};
+      [...row.children].slice(1).forEach((td,idx)=>{
+        availability[people[idx]]=!td.classList.contains("na");
+      });
+      return {
+        name:a.textContent,
+        url:a.href,
+        availability,
+        days:[...ALL_DAYS],
+        logo:inferLogo(a.textContent,a.href)
+      };
+    });
+    localStorage.setItem("daily-casino-layout-v1",JSON.stringify(layout));
+  }
+
+  const tbody = document.querySelector("tbody");
+  tbody.innerHTML = "";
+
+  layout.forEach((item, idx) => {
+    item.days=normalizeDays(item.days);
+    item.logo=item.logo||inferLogo(item.name,item.url);
+    const tr = document.createElement("tr");
+    tr.dataset.days=JSON.stringify(item.days);
+    tr.dataset.logo=item.logo;
+
+    let cells = `<td class="offer"><div class="offer-main">${logoMarkup(item.logo,item.name)}<div class="offer-text"><a href="${item.url||"#"}" target="_blank">${item.name}</a><div class="days-mini">${item.days.join(" · ")}</div></div><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></div></td>`;
+    people.forEach(person => {
+      if (item.availability?.[person] !== false) {
+        cells += `<td><label class="cell"><input type="checkbox" data-p="${person}" data-i="${idx}"><span></span></label></td>`;
+      } else {
+        cells += `<td class="na">—</td>`;
+      }
+    });
+    tr.innerHTML = cells;
+    tbody.appendChild(tr);
+  });
+
+  bindCheckboxes();
+  bindEditButtons();
+  applyScheduleVisibility();
+}
+let modalRow=null;
+let modalIsNew=false;
+let selectedLogo="none";
+
+function renderModalDays(selected){
+  const box=document.getElementById("modalDays");
+  box.innerHTML=ALL_DAYS.map(d=>`<label><input type="checkbox" value="${d}" ${selected.includes(d)?"checked":""}> ${d}</label>`).join("");
+}
+
+function renderLogoGrid(){
+  const grid=document.getElementById("logoGrid");
+  const q=(document.getElementById("logoSearch")?.value||"").trim().toLowerCase();
+  const list=LOGOS.filter(l=>!q || l.name.toLowerCase().includes(q) || l.id.toLowerCase().includes(q));
+  grid.innerHTML=list.map(l=>{
+    const icon=l.domain?logoImgMarkup(l,"picker-logo"):`<span class="offer-logo-fallback">No logo</span>`;
+    return `<button type="button" class="logo-option ${l.id===selectedLogo?"selected":""}" data-logo="${l.id}">${icon}<span>${l.name}</span></button>`;
+  }).join("");
+  grid.querySelectorAll(".logo-option").forEach(btn=>{
+    btn.onclick=()=>{
+      selectedLogo=btn.dataset.logo;
+      renderLogoGrid();
+    };
+  });
+}
+
+function openOfferModal(row,isNew){
+  modalRow=row;
+  modalIsNew=isNew;
+  document.getElementById("modalTitle").textContent=isNew?"Add offer":"Edit offer";
+
+  if(isNew){
+    document.getElementById("modalName").value="";
+    document.getElementById("modalUrl").value="https://";
+    selectedLogo="none";
+    renderModalDays([...ALL_DAYS]);
+  }else{
+    const a=row.querySelector(".offer a");
+    document.getElementById("modalName").value=a.textContent;
+    document.getElementById("modalUrl").value=a.href;
+    selectedLogo=row.dataset.logo||inferLogo(a.textContent,a.href);
+    renderModalDays(normalizeDays(JSON.parse(row.dataset.days||"null")));
+  }
+  const search=document.getElementById("logoSearch");
+  search.value="";
+  search.oninput=renderLogoGrid;
+  renderLogoGrid();
+  document.getElementById("offerModal").classList.add("open");
+}
+
+function closeOfferModal(){
+  document.getElementById("offerModal").classList.remove("open");
+  modalRow=null;
+  modalIsNew=false;
+}
+
+document.getElementById("modalCancel").onclick=closeOfferModal;
+document.getElementById("offerModal").addEventListener("click",e=>{
+  if(e.target.id==="offerModal") closeOfferModal();
+});
+
+document.getElementById("modalSave").onclick=()=>{
+  const name=document.getElementById("modalName").value.trim();
+  let url=document.getElementById("modalUrl").value.trim();
+  const days=[...document.querySelectorAll("#modalDays input:checked")].map(x=>x.value);
+
+  if(!name){alert("Please enter an offer name.");return}
+  if(!days.length){alert("Choose at least one active day.");return}
+  if(!url) url="#";
+
+  if(modalIsNew){
+    const tbody=document.querySelector("tbody");
+    const idx=tbody.children.length;
+    const tr=document.createElement("tr");
+    tr.dataset.days=JSON.stringify(days);
+    tr.dataset.logo=selectedLogo;
+    let cells=`<td class="offer"><div class="offer-main">${logoMarkup(selectedLogo,name)}<div class="offer-text"><a href="${url}" target="_blank">${name}</a><div class="days-mini">${days.join(" · ")}</div></div><span class="edit-actions"><button class="editOffer">Edit</button><button class="deleteOffer">Delete</button></span></div></td>`;
+    people.forEach(person=>{
+      cells+=`<td><label class="cell"><input type="checkbox" data-p="${person}" data-i="${idx}"><span></span></label></td>`;
+    });
+    tr.innerHTML=cells;
+    tbody.appendChild(tr);
+  }else if(modalRow){
+    const a=modalRow.querySelector(".offer a");
+    a.textContent=name;
+    a.href=url;
+    modalRow.dataset.days=JSON.stringify(days);
+    modalRow.dataset.logo=selectedLogo;
+    const main=modalRow.querySelector(".offer-main");
+    const oldLogo=main.querySelector(".offer-logo, .offer-logo-fallback");
+    const tmp=document.createElement("div");
+    tmp.innerHTML=logoMarkup(selectedLogo,name);
+    const newNodes=[...tmp.childNodes];
+    if(oldLogo){
+      // remove both image/fallback logo nodes if present
+      [...main.children].filter(el=>el.classList?.contains("offer-logo")||el.classList?.contains("offer-logo-fallback")).forEach(el=>el.remove());
+      const first=main.firstChild;
+      newNodes.reverse().forEach(n=>main.insertBefore(n,first));
+    }
+    const mini=modalRow.querySelector(".days-mini");
+    if(mini) mini.textContent=days.join(" · ");
+  }
+
+  refreshRowIndexes();
+  bindCheckboxes();
+  bindEditButtons();
+  saveLayout();
+  renderState();
+  applyScheduleVisibility();
+  closeOfferModal();
+};
+
+document.getElementById("editMode").onclick = () => {
+  editing = !editing;
+  document.body.classList.toggle("editing", editing);
+  document.getElementById("editMode").textContent = editing ? "Done editing" : "Edit mode";
+  document.getElementById("addOffer").style.display = editing ? "" : "none";
+  applyScheduleVisibility();
+};
+
+document.getElementById("addOffer").onclick = () => openOfferModal(null,true);
+
+const originalLoad = load;
+load = function() {
+  loadLayout();
+  bindCheckboxes();
+  renderState();
+  bindEditButtons();
+};
+
+renderDaybar();
+bindCheckboxes();
+load();
+applyScheduleVisibility();
+syncFromCloud();
+setInterval(syncFromCloud, 5000);
+</script></body></html>
